@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 · Conectando con Datos — Pandas DataReader</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --border: #30363d;
+  --green: #3fb950;
+  --green-dim: #1a4226;
+  --amber: #d29922;
+  --amber-dim: #3d2e0a;
+  --blue: #58a6ff;
+  --blue-dim: #0d2a4f;
+  --red: #f85149;
+  --red-dim: #3d1515;
+  --purple: #bc8cff;
+  --purple-dim: #2a1a4a;
+  --cyan: #39d353;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #6e7681;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  font-family: var(--mono);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px;
+}
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.topbar-title { font-size: 12px; color: var(--text2); margin-left: 8px; letter-spacing: 0.04em; }
+
+.nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-wrap: wrap;
+}
+.nav-btn {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text2);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+.section { display: none; padding: 20px; }
+.section.visible { display: block; }
+
+.phase-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.h3 { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+.gap { height: 16px; }
+.gap-sm { height: 8px; }
+
+.explain-box {
+  background: var(--bg3);
+  border-left: 3px solid var(--green);
+  border-radius: 0 6px 6px 0;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text2);
+  margin-bottom: 12px;
+}
+.explain-box .label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+  color: var(--green);
+}
+.explain-amber  { border-left-color: var(--amber);  } .explain-amber  .label { color: var(--amber);  }
+.explain-blue   { border-left-color: var(--blue);   } .explain-blue   .label { color: var(--blue);   }
+.explain-red    { border-left-color: var(--red);    } .explain-red    .label { color: var(--red);    }
+.explain-purple { border-left-color: var(--purple); } .explain-purple .label { color: var(--purple); }
+
+.code-block {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.85;
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+.cm  { color: var(--text3); }
+.kw  { color: var(--purple); }
+.fn  { color: var(--blue); }
+.st  { color: #79c0ff; }
+.va  { color: var(--green); }
+.nu  { color: var(--amber); }
+.cl  { color: #ffa657; }
+.at  { color: #d2a8ff; }
+
+.output-box {
+  background: #0a0f14;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 11px;
+  color: var(--green);
+  line-height: 1.8;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+.out-header { color: var(--amber); }
+.out-dim    { color: var(--text3); }
+.out-warn   { color: var(--red);   }
+
+.pill {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.pill-green  { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green);  }
+.pill-amber  { background: var(--amber-dim);  color: var(--amber);  border: 1px solid var(--amber);  }
+.pill-blue   { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue);   }
+.pill-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple); }
+.pill-red    { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red);    }
+
+/* grid de librerías */
+.lib-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.lib-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.lib-name { font-size: 11px; color: var(--blue);   margin-bottom: 3px; }
+.lib-inst { font-size: 10px; color: var(--amber);  margin-bottom: 5px; }
+.lib-desc { font-size: 11px; color: var(--text2);  line-height: 1.5; }
+
+/* tabla de proveedores */
+.prov-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11px; }
+.prov-table th {
+  background: var(--bg3);
+  color: var(--text3);
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.prov-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  vertical-align: top;
+}
+.prov-table tr:last-child td { border-bottom: none; }
+.prov-table tr:hover td { background: var(--bg3); }
+.badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.04em;
+}
+.badge-ok  { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+.badge-err { background: var(--red-dim);   color: var(--red);   border: 1px solid var(--red);   }
+.badge-key { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+
+/* comparativa métodos */
+.method-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.method-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.method-title {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.method-tag  { font-size: 12px; color: var(--blue); margin-bottom: 4px; }
+.method-desc { font-size: 11px; color: var(--text2); line-height: 1.5; margin-top: 4px; }
+
+/* candle diagram */
+.candle-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.candle-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text2);
+}
+.candle-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+/* quiz */
+.quiz-q {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.quiz-q .q-text { font-size: 12px; color: var(--text); margin-bottom: 10px; line-height: 1.6; }
+.quiz-opts { display: flex; flex-direction: column; gap: 6px; }
+.quiz-opt {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--mono);
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s;
+}
+.quiz-opt:hover { border-color: var(--blue); color: var(--text); }
+.quiz-opt.correct { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.quiz-opt.wrong   { background: var(--red-dim);   border-color: var(--red);   color: var(--red);   }
+.quiz-feedback {
+  display: none;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.quiz-feedback.show  { display: block; }
+.feedback-ok { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+.feedback-no { background: var(--red-dim);   color: var(--red);   border: 1px solid var(--red);   }
+
+/* summary */
+.summary-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.summary-icon { color: var(--green); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.summary-text { color: var(--text2); }
+.summary-text strong { color: var(--text); }
+
+/* step rows */
+.step-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.step-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.step-body { flex: 1; }
+.step-title { font-size: 12px; color: var(--text); margin-bottom: 5px; }
+.step-desc  { font-size: 11px; color: var(--text2); line-height: 1.6; }
+</style>
+
+<style id="kb-crumb-style">
+  .kb-crumbbar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 40px;
+    z-index: 999999;
+    background: #0a0e14;
+    border-bottom: 1px solid #1e2d45;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    font-family: 'JetBrains Mono', 'Space Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: .04em;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .kb-crumbbar a { color: #7fa8c9; text-decoration: none; transition: color .15s; flex-shrink: 0; }
+  .kb-crumbbar a:hover { color: #38d9a9; }
+  .kb-crumbbar .sep { color: #3a4a5e; flex-shrink: 0; }
+  .kb-crumbbar .cur { color: #eaf2ff; overflow: hidden; text-overflow: ellipsis; }
+  html { scroll-padding-top: 48px; }
+  body { padding-top: 40px !important; }
+  
+</style>
+</head>
+<body>
+<div class="kb-crumbbar">
+  <a href="../../index.html">Inicio</a>
+  <span class="sep">/</span>
+  <a href="../../modulos/01-acciones/index.html">01 · Extracción de datos de acciones</a>
+  <span class="sep">/</span>
+  <span class="cur">Lección 03 · pandas_datareader</span>
+</div>
+
+<div class="card">
+
+  <div class="topbar">
+    <div class="dot dot-r"></div>
+    <div class="dot dot-y"></div>
+    <div class="dot dot-g"></div>
+    <span class="topbar-title">03_pandas_datareader.py — Procesamiento de Datos Financieros</span>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('conceptos', this)">01 · Conceptos</button>
+    <button class="nav-btn" onclick="show('metodos', this)">02 · Dos métodos</button>
+    <button class="nav-btn" onclick="show('limpieza', this)">03 · Limpieza</button>
+    <button class="nav-btn" onclick="show('grafica', this)">04 · Gráfica</button>
+    <button class="nav-btn" onclick="show('quiz', this)">05 · Quiz</button>
+    <button class="nav-btn" onclick="show('resumen', this)">06 · Resumen</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       01 · CONCEPTOS
+  ══════════════════════════════════════════════ -->
+  <div id="sec-conceptos" class="section visible">
+    <div class="phase-label">¿Qué es pandas_datareader y para qué sirve?</div>
+
+    <div class="explain-box">
+      <span class="label">contexto</span>
+      <code style="color:var(--blue)">pandas_datareader</code> es una librería que actúa como <strong style="color:var(--text)">puente</strong> entre Python y distintas fuentes de datos financieros. En lugar de aprender cómo conectarte a cada API por separado, usas siempre la misma sintaxis y la librería se encarga del resto. No es la opción más rápida, pero es muy conocida — la encontrarás frecuentemente en blogs de inversión y en código financiero de internet.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Las cuatro librerías de esta lección</div>
+    <div class="lib-grid">
+      <div class="lib-card">
+        <div class="lib-name">pandas_datareader</div>
+        <div class="lib-inst">pip install pandas-datareader</div>
+        <div class="lib-desc">Librería principal. Descarga datos históricos desde múltiples fuentes con una sola función.</div>
+      </div>
+      <div class="lib-card">
+        <div class="lib-name">datetime</div>
+        <div class="lib-inst">incluida en Python</div>
+        <div class="lib-desc">Maneja fechas y horas. Aquí la usamos para definir el rango de tiempo de los datos.</div>
+      </div>
+      <div class="lib-card">
+        <div class="lib-name">mplfinance</div>
+        <div class="lib-inst">pip install mplfinance</div>
+        <div class="lib-desc">Especializada en gráficas financieras. Genera gráficas de velas (candlestick) con una línea.</div>
+      </div>
+      <div class="lib-card">
+        <div class="lib-name">matplotlib.pyplot</div>
+        <div class="lib-inst">pip install matplotlib</div>
+        <div class="lib-desc">Librería base de visualización. Aquí solo la usamos para ejecutar <code>plt.show()</code> y mostrar la gráfica.</div>
+      </div>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Los 10 proveedores disponibles</div>
+    <div class="explain-box explain-blue">
+      <span class="label">¿cómo se listan?</span>
+      Con esta línea de código puedes ver todas las fuentes disponibles en la librería:
+      <br><br>
+      <code style="color:var(--green)">[i for i in dir(pdr) if "get_data" in i]</code>
+      <br><br>
+      Filtra todos los métodos que contienen <code>"get_data"</code> en su nombre. La función <code style="color:var(--blue)">dir()</code> devuelve todos los atributos y métodos de un objeto — aquí la usamos para explorar la librería.
+    </div>
+
+    <table class="prov-table">
+      <tr>
+        <th>Proveedor</th>
+        <th>Método</th>
+        <th>Requiere API Key</th>
+        <th>Estado</th>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Stooq</td>
+        <td><code>get_data_stooq()</code></td>
+        <td><span class="badge badge-ok">No</span></td>
+        <td><span class="badge badge-ok">✓ Funciona</span></td>
+      </tr>
+      <tr>
+        <td>Yahoo Finance</td>
+        <td><code>get_data_yahoo()</code></td>
+        <td><span class="badge badge-ok">No</span></td>
+        <td><span class="badge badge-err">✗ Roto actualmente</span></td>
+      </tr>
+      <tr>
+        <td>Quandl / Nasdaq</td>
+        <td><code>get_data_quandl()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>FRED</td>
+        <td><code>get_data_fred()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>Moody's</td>
+        <td><code>get_data_moody()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>Tiingo</td>
+        <td><code>get_data_tiingo()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>IEX Cloud</td>
+        <td><code>get_data_iex()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>Alpha Vantage</td>
+        <td><code>get_data_alphavantage()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>Enigma</td>
+        <td><code>get_data_enigma()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+      <tr>
+        <td>WorldBank</td>
+        <td><code>get_data_worldbank()</code></td>
+        <td><span class="badge badge-key">Sí</span></td>
+        <td><span class="badge badge-ok">Funciona</span></td>
+      </tr>
+    </table>
+
+    <div class="explain-box explain-amber">
+      <span class="label">¿por qué usamos Stooq?</span>
+      Es la única fuente sin API key que actualmente funciona. Yahoo Finance también estaría disponible sin key, pero lleva tiempo sin responder correctamente a través de esta librería. Si necesitas datos de Yahoo, usa directamente <code>yfinance</code> como vimos en lecciones anteriores.
+    </div>
+
+    <div class="explain-box explain-purple">
+      <span class="label">¿qué es Stooq?</span>
+      Una plataforma financiera en línea que provee datos bursátiles históricos de manera gratuita. No es tan conocida como Yahoo Finance, pero es confiable y no requiere registro ni token para acceder.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       02 · DOS MÉTODOS
+  ══════════════════════════════════════════════ -->
+  <div id="sec-metodos" class="section">
+    <div class="phase-label">Dos formas de descargar los mismos datos</div>
+
+    <div class="explain-box">
+      <span class="label">¿por qué dos métodos?</span>
+      <code>pandas_datareader</code> ofrece una función rápida (<code>get_data_stooq</code>) y también acceso directo a la clase interna (<code>StooqDailyReader</code>). Ambos traen los mismos datos — la diferencia está en cómo los recibes y cuánto control tienes sobre el proceso.
+    </div>
+
+    <div class="gap-sm"></div>
+
+    <div class="pill pill-blue">método 1 — función directa (la más simple)</div>
+    <div class="code-block">
+<span class="cm"># Definir rango de fechas con datetime</span><br>
+<span class="va">start_date</span> = <span class="cl">datetime</span>.<span class="fn">datetime</span>(<span class="nu">2020</span>, <span class="nu">1</span>, <span class="nu">1</span>)<br>
+<span class="va">end_date</span>   = <span class="cl">datetime</span>.<span class="fn">datetime</span>(<span class="nu">2025</span>, <span class="nu">1</span>, <span class="nu">1</span>)<br>
+<br>
+<span class="cm"># Petición directa a Stooq</span><br>
+<span class="va">df_stooq</span> = <span class="va">pdr</span>.<span class="fn">get_data_stooq</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">symbols</span> = [<span class="st">"AMZN"</span>],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">start</span>   = <span class="va">start_date</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">end</span>     = <span class="va">end_date</span><br>
+)
+    </div>
+    <div class="explain-box">
+      <span class="label">¿qué hace cada parámetro?</span>
+      <code style="color:var(--blue)">symbols</code> — lista de tickers a descargar. Siempre entre corchetes aunque sea uno solo.<br>
+      <code style="color:var(--blue)">start</code> — fecha de inicio. Aquí se pasa un objeto <code>datetime</code> (no un string).<br>
+      <code style="color:var(--blue)">end</code> — fecha de fin. Mismo formato que start.<br><br>
+      Diferencia importante con <code>yfinance</code>: aquí las fechas son objetos <code>datetime</code>, no cadenas de texto como <code>"2020-01-01"</code>.
+    </div>
+
+    <div class="output-box">
+      <span class="out-header">------- Obtener Datos Históricos. Fuente: Stooq -------</span><br>
+      <span class="out-dim">            Open    High     Low   Close      Volume</span><br>
+      <span class="out-dim">Date</span><br>
+      <span class="out-dim">2024-12-31  224.49  225.36  219.15  221.30  42761400</span><br>
+      <span class="out-dim">2024-12-30  225.28  226.52  221.45  222.45  39000000</span><br>
+      <span class="out-dim">...         ...     ...     ...    ...       ...</span><br>
+      <span class="out-dim">2020-01-03  94.90   95.90   93.75   94.90  45000000</span><br>
+      <span style="color:var(--amber)">⚠ Nota: los datos llegan en orden INVERSO (de más reciente a más antiguo)</span>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="pill pill-amber">método 2 — clase directa (más control)</div>
+    <div class="code-block">
+<span class="cm"># Usando la clase interna StooqDailyReader</span><br>
+<span class="va">stooq_df</span> = <span class="va">pdr</span>.<span class="va">stooq</span>.<span class="fn">StooqDailyReader</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">symbols</span> = [<span class="st">"AMZN"</span>],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">start</span>   = <span class="st">"2020-01-01"</span>,  <span class="cm"># aquí sí acepta strings</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">end</span>     = <span class="st">"2025-01-01"</span><br>
+)<br>
+<span class="va">df</span> = <span class="va">stooq_df</span>.<span class="fn">read</span>()  <span class="cm"># ejecutar la lectura</span><br>
+<span class="va">df</span> = <span class="va">df</span>[::<span class="nu">-1</span>]          <span class="cm"># invertir el orden (de antiguo a reciente)</span>
+    </div>
+    <div class="explain-box explain-blue">
+      <span class="label">¿qué es [::-1]?</span>
+      Es slicing de Python aplicado a un DataFrame. Significa: "dame todos los elementos, pero al revés". Es equivalente a voltear una lista de cabeza. Stooq devuelve los datos del más reciente al más antiguo — con <code>[::-1]</code> los invertimos para que queden cronológicamente correctos (de antiguo a reciente), que es el formato que espera la librería de gráficas.
+    </div>
+
+    <div class="gap-sm"></div>
+
+    <div class="method-compare">
+      <div class="method-box">
+        <div class="method-title">método 1 — get_data_stooq()</div>
+        <div class="method-tag">Función directa</div>
+        <div class="method-desc">Una sola línea. Fechas con <code>datetime</code>. Resultado inmediato en un DataFrame. Menos control sobre el proceso.</div>
+      </div>
+      <div class="method-box">
+        <div class="method-title">método 2 — StooqDailyReader()</div>
+        <div class="method-tag">Clase + .read()</div>
+        <div class="method-desc">Dos pasos: crear el lector y luego llamar <code>.read()</code>. Acepta strings como fechas. Más flexible para personalización.</div>
+      </div>
+    </div>
+
+    <div class="explain-box explain-amber">
+      <span class="label">doble nivel en columnas — problema que resolveremos</span>
+      Stooq devuelve columnas con <strong style="color:var(--text)">dos niveles</strong>: el nombre de la columna (Open, High, Low...) y el ticker (AMZN). Ejemplo: <code>(Open, AMZN)</code>, <code>(High, AMZN)</code>. Esto es útil si descargas varios tickers a la vez, pero para graficar un solo activo es un obstáculo que hay que eliminar.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       03 · LIMPIEZA
+  ══════════════════════════════════════════════ -->
+  <div id="sec-limpieza" class="section">
+    <div class="phase-label">Limpiar el DataFrame antes de graficar</div>
+
+    <div class="explain-box">
+      <span class="label">¿por qué necesitamos limpiar?</span>
+      <code>mplfinance</code> espera un DataFrame con columnas llamadas exactamente <code>Open</code>, <code>High</code>, <code>Low</code>, <code>Close</code>, <code>Volume</code> — en un solo nivel. Si el DataFrame tiene dos niveles de columnas como <code>(Open, AMZN)</code>, la librería de gráficas no lo reconocerá y lanzará un error.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">El problema: columnas con doble nivel</div>
+
+    <div class="output-box">
+      <span class="out-header"># así llegan las columnas desde Stooq:</span><br>
+      <span class="out-dim">MultiIndex([( 'Open', 'AMZN'),</span><br>
+      <span class="out-dim">            ( 'High', 'AMZN'),</span><br>
+      <span class="out-dim">            (  'Low', 'AMZN'),</span><br>
+      <span class="out-dim">            ('Close', 'AMZN'),</span><br>
+      <span class="out-dim">            ('Volume','AMZN')],)</span><br>
+      <br>
+      <span class="out-header"># nivel 0: nombre de la columna  →  queremos conservar esto</span><br>
+      <span class="out-header"># nivel 1: nombre del ticker      →  esto hay que eliminar</span>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="pill pill-green">la solución — droplevel()</div>
+    <div class="code-block">
+<span class="va">df</span>.<span class="at">columns</span> = <span class="va">df</span>.<span class="at">columns</span>.<span class="fn">droplevel</span>(<span class="at">level</span>=<span class="nu">1</span>)
+    </div>
+
+    <div class="explain-box">
+      <span class="label">¿qué hace droplevel(level=1)?</span>
+      <code style="color:var(--blue)">droplevel()</code> elimina un nivel de las columnas. <code>level=1</code> indica que queremos eliminar el segundo nivel (el del ticker). Los niveles se cuentan desde 0, así que:<br><br>
+      <code>level=0</code> → nombre de la columna (Open, High...) — <span style="color:var(--green)">conservar</span><br>
+      <code>level=1</code> → nombre del ticker (AMZN) — <span style="color:var(--red)">eliminar</span>
+    </div>
+
+    <div class="output-box">
+      <span class="out-header"># resultado después de droplevel(level=1):</span><br>
+      <span class="out-dim">Index(['Open', 'High', 'Low', 'Close', 'Volume'])</span><br>
+      <br>
+      <span style="color:var(--green)">✓ Un solo nivel — listo para graficar</span>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Flujo completo de limpieza</div>
+
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Descargar con StooqDailyReader</div>
+        <div class="step-desc">Los datos llegan en orden inverso y con columnas de doble nivel.</div>
+        <div class="code-block" style="margin-top:8px">
+<span class="va">df</span> = <span class="va">pdr</span>.<span class="va">stooq</span>.<span class="fn">StooqDailyReader</span>(<span class="at">symbols</span>=[<span class="st">"AMZN"</span>], <span class="at">start</span>=<span class="st">"2020-01-01"</span>, <span class="at">end</span>=<span class="st">"2025-01-01"</span>).<span class="fn">read</span>()
+        </div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Invertir el orden cronológico</div>
+        <div class="step-desc">De más reciente → más antiguo, pasar a más antiguo → más reciente.</div>
+        <div class="code-block" style="margin-top:8px">
+<span class="va">df</span> = <span class="va">df</span>[::<span class="nu">-1</span>]
+        </div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Eliminar el nivel extra de columnas</div>
+        <div class="step-desc">Quitar el nivel del ticker para dejar solo los nombres de columna.</div>
+        <div class="code-block" style="margin-top:8px">
+<span class="va">df</span>.<span class="at">columns</span> = <span class="va">df</span>.<span class="at">columns</span>.<span class="fn">droplevel</span>(<span class="at">level</span>=<span class="nu">1</span>)
+        </div>
+      </div>
+    </div>
+
+    <div class="explain-box explain-purple">
+      <span class="label">¿cuándo NO necesitas droplevel?</span>
+      Si usas <code>get_data_stooq()</code> con un solo ticker, igual obtendrás el doble nivel. Si descargas <strong style="color:var(--text)">varios tickers a la vez</strong> (ej. <code>["AMZN", "TSLA", "MSFT"]</code>), el doble nivel es útil — te permite separar los datos por empresa usando <code>df["Open"]["AMZN"]</code>. Solo elimínalo cuando vayas a graficar un activo individual.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       04 · GRÁFICA DE VELAS
+  ══════════════════════════════════════════════ -->
+  <div id="sec-grafica" class="section">
+    <div class="phase-label">Visualizar datos con gráfica de velas (candlestick)</div>
+
+    <div class="explain-box">
+      <span class="label">¿qué es una gráfica de velas?</span>
+      Es el estándar visual del trading. Cada "vela" representa un período de tiempo (aquí, un día) y contiene cuatro datos: el precio de apertura, el máximo, el mínimo y el cierre. De un vistazo puedes ver tendencias, volatilidad y movimientos del mercado mucho mejor que con una línea simple.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Anatomía de una vela</div>
+
+    <div style="background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:16px; margin-bottom:14px; display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+      <svg width="60" height="120" viewBox="0 0 60 120" style="flex-shrink:0;">
+        <!-- vela alcista (verde) -->
+        <line x1="30" y1="5"  x2="30" y2="25" stroke="#3fb950" stroke-width="2"/>
+        <rect x="18" y="25" width="24" height="50" fill="#3fb950" rx="2"/>
+        <line x1="30" y1="75" x2="30" y2="95" stroke="#3fb950" stroke-width="2"/>
+        <!-- etiquetas -->
+        <text x="38" y="10"  fill="#6e7681" font-size="8" font-family="monospace">HIGH</text>
+        <text x="38" y="30"  fill="#6e7681" font-size="8" font-family="monospace">CLOSE</text>
+        <text x="38" y="70"  fill="#6e7681" font-size="8" font-family="monospace">OPEN</text>
+        <text x="38" y="92"  fill="#6e7681" font-size="8" font-family="monospace">LOW</text>
+      </svg>
+      <svg width="60" height="120" viewBox="0 0 60 120" style="flex-shrink:0;">
+        <!-- vela bajista (roja) -->
+        <line x1="30" y1="5"  x2="30" y2="25" stroke="#f85149" stroke-width="2"/>
+        <rect x="18" y="25" width="24" height="50" fill="#f85149" rx="2"/>
+        <line x1="30" y1="75" x2="30" y2="95" stroke="#f85149" stroke-width="2"/>
+        <text x="38" y="10"  fill="#6e7681" font-size="8" font-family="monospace">HIGH</text>
+        <text x="38" y="30"  fill="#6e7681" font-size="8" font-family="monospace">OPEN</text>
+        <text x="38" y="70"  fill="#6e7681" font-size="8" font-family="monospace">CLOSE</text>
+        <text x="38" y="92"  fill="#6e7681" font-size="8" font-family="monospace">LOW</text>
+      </svg>
+      <div style="flex:1; min-width:180px;">
+        <div class="candle-legend" style="flex-direction:column; gap:8px;">
+          <div class="candle-item"><div class="candle-swatch" style="background:var(--green);"></div><span><strong style="color:var(--green)">Verde (alcista):</strong> el precio cerró más alto que como abrió → el mercado subió ese día.</span></div>
+          <div class="candle-item"><div class="candle-swatch" style="background:var(--red);"></div><span><strong style="color:var(--red)">Rojo (bajista):</strong> el precio cerró más bajo que como abrió → el mercado bajó ese día.</span></div>
+          <div class="candle-item"><div class="candle-swatch" style="background:var(--text3); height:4px; margin-top:5px;"></div><span><strong style="color:var(--text)">Mecha:</strong> la línea delgada muestra el máximo y mínimo del día, incluyendo movimientos fuera del cuerpo.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="pill pill-purple">el código de la gráfica</div>
+    <div class="code-block">
+<span class="va">mpf</span>.<span class="fn">plot</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">data</span>             = <span class="va">df</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">style</span>            = <span class="st">"yahoo"</span>,         <span class="cm"># estilo visual: fondo blanco, colores financieros</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">type</span>             = <span class="st">"candle"</span>,        <span class="cm"># gráfica de velas (alternativas: "line", "ohlc")</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">volume</span>           = <span class="kw">True</span>,           <span class="cm"># mostrar panel de volumen debajo</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">title</span>            = <span class="st">"Precio de Amazon"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">figsize</span>          = (<span class="nu">22</span>, <span class="nu">6</span>),        <span class="cm"># ancho=22, alto=6 pulgadas</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">warn_too_much_data</span> = <span class="va">df</span>.<span class="at">shape</span>[<span class="nu">0</span>], <span class="cm"># silencia la advertencia de >500 velas</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">figscale</span>         = <span class="nu">3.0</span>,           <span class="cm"># escala general: velas más gruesas y visibles</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="at">panel_ratios</span>     = (<span class="nu">7</span>, <span class="nu">3</span>)         <span class="cm"># 70% precios, 30% volumen</span><br>
+)<br>
+<span class="va">plt</span>.<span class="fn">show</span>()
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">¿Qué hace cada parámetro?</div>
+    <table class="prov-table">
+      <tr><th>Parámetro</th><th>Valor en la lección</th><th>¿Para qué sirve?</th></tr>
+      <tr>
+        <td><code>data</code></td>
+        <td><code>df</code></td>
+        <td>El DataFrame limpio con columnas Open, High, Low, Close, Volume.</td>
+      </tr>
+      <tr>
+        <td><code>style</code></td>
+        <td><code>"yahoo"</code></td>
+        <td>Estilo visual predefinido. Hay otros: <code>"default"</code>, <code>"charles"</code>, <code>"nightclouds"</code>.</td>
+      </tr>
+      <tr>
+        <td><code>type</code></td>
+        <td><code>"candle"</code></td>
+        <td>Tipo de gráfica. Alternativas: <code>"line"</code> (línea simple), <code>"ohlc"</code> (barras).</td>
+      </tr>
+      <tr>
+        <td><code>volume</code></td>
+        <td><code>True</code></td>
+        <td>Añade un panel secundario con el volumen diario de operaciones.</td>
+      </tr>
+      <tr>
+        <td><code>figsize</code></td>
+        <td><code>(22, 6)</code></td>
+        <td>Tamaño en pulgadas (ancho, alto). Número grande = imagen más grande.</td>
+      </tr>
+      <tr>
+        <td><code>warn_too_much_data</code></td>
+        <td><code>df.shape[0]</code></td>
+        <td>Silencia el aviso cuando hay más de 500 velas. <code>df.shape[0]</code> = número de filas.</td>
+      </tr>
+      <tr>
+        <td><code>figscale</code></td>
+        <td><code>3.0</code></td>
+        <td>Escala todo el gráfico. Valores mayores hacen las velas más gruesas y legibles.</td>
+      </tr>
+      <tr>
+        <td><code>panel_ratios</code></td>
+        <td><code>(7, 3)</code></td>
+        <td>Proporción de altura entre los dos paneles. 7 partes de precio, 3 de volumen.</td>
+      </tr>
+    </table>
+
+    <div class="explain-box explain-blue">
+      <span class="label">¿qué es df.shape[0]?</span>
+      <code>df.shape</code> devuelve una tupla con las dimensiones del DataFrame: <code>(filas, columnas)</code>. Al poner <code>[0]</code> tomamos solo el número de filas — en este caso, la cantidad de días de datos descargados. Si descargaste 5 años de datos de lunes a viernes, serán aproximadamente 1,260 filas.
+    </div>
+
+    <div class="explain-box explain-amber">
+      <span class="label">ventaja vs. gráfica de línea simple</span>
+      La gráfica de velas muestra cuatro valores por día (Open, High, Low, Close) en lugar de uno solo (Close). Esto permite ver de un vistazo la volatilidad del día, la dirección del mercado y posibles patrones de reversión — información que una línea simple no puede comunicar.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       05 · QUIZ
+  ══════════════════════════════════════════════ -->
+  <div id="sec-quiz" class="section">
+    <div class="phase-label">Verifica tu comprensión</div>
+
+    <div class="quiz-q" id="q1">
+      <div class="q-text">1 · ¿Cuál es la principal diferencia entre pasar fechas en el método 1 vs el método 2?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q1',this,false,'No. Ambos métodos descargan del mismo proveedor Stooq — la fuente de datos es idéntica.')">El método 1 descarga de Yahoo y el método 2 de Stooq</button>
+        <button class="quiz-opt" onclick="check('q1',this,true,'¡Correcto! get_data_stooq() espera objetos datetime, mientras que StooqDailyReader() acepta strings con formato YYYY-MM-DD. Ambas formas son válidas pero hay que usar la correcta según el método.')">El método 1 requiere objetos datetime; el método 2 acepta strings como "2020-01-01"</button>
+        <button class="quiz-opt" onclick="check('q1',this,false,'No. Ambos métodos devuelven exactamente el mismo rango de fechas si se configuran igual.')">El método 1 descarga más años de historia que el método 2</button>
+        <button class="quiz-opt" onclick="check('q1',this,false,'No es así. El método 2 usa .read() para ejecutar la lectura, mientras que el método 1 hace todo en una sola línea.')">El método 2 es más lento porque pide los datos dos veces</button>
+      </div>
+      <div class="quiz-feedback" id="q1-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q2">
+      <div class="q-text">2 · ¿Qué hace exactamente <code>df[::-1]</code>?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q2',this,false,'No. [::-1] no borra nada — solo cambia el orden de las filas existentes.')">Elimina la última fila del DataFrame</button>
+        <button class="quiz-opt" onclick="check('q2',this,false,'No. Eso sería df.columns = df.columns[::-1]. Aquí se invierten las filas, no las columnas.')">Invierte el orden de las columnas</button>
+        <button class="quiz-opt" onclick="check('q2',this,true,'¡Correcto! Es slicing con paso -1: lee todos los elementos pero de atrás hacia adelante. Stooq devuelve datos de más reciente a más antiguo, y con [::-1] los ponemos en orden cronológico correcto.')">Invierte el orden de las filas — de más reciente a más antiguo pasa a ser de más antiguo a más reciente</button>
+        <button class="quiz-opt" onclick="check('q2',this,false,'No. [::-1] no tiene ningún efecto sobre las columnas ni sus niveles.')">Elimina el segundo nivel de columnas</button>
+      </div>
+      <div class="quiz-feedback" id="q2-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q3">
+      <div class="q-text">3 · ¿Por qué es necesario usar <code>droplevel(level=1)</code> antes de graficar?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q3',this,false,'No. El volumen ya viene incluido en los datos descargados — droplevel no tiene relación con eso.')">Para agregar la columna de volumen al DataFrame</button>
+        <button class="quiz-opt" onclick="check('q3',this,false,'No. droplevel no cambia el orden — solo modifica la estructura de las columnas.')">Para ordenar las columnas alfabéticamente</button>
+        <button class="quiz-opt" onclick="check('q3',this,true,'¡Correcto! mplfinance busca columnas llamadas exactamente Open, High, Low, Close, Volume. Si las columnas tienen dos niveles como (Open, AMZN), la librería no las reconoce y falla. droplevel(1) elimina el nivel del ticker y deja solo los nombres limpios.')">Porque mplfinance espera columnas con un solo nivel y Stooq las devuelve con dos (nombre + ticker)</button>
+        <button class="quiz-opt" onclick="check('q3',this,false,'No. droplevel opera sobre el índice de columnas, no sobre las filas ni el índice de fechas.')">Para convertir el índice de fechas a formato numérico</button>
+      </div>
+      <div class="quiz-feedback" id="q3-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q4">
+      <div class="q-text">4 · Una vela <span style="color:var(--red)">roja</span> en una gráfica de candlestick indica que…</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q4',this,false,'No. El volumen alto puede ocurrir tanto en velas rojas como verdes — no hay relación directa.')">El volumen de operaciones fue inusualmente alto ese día</button>
+        <button class="quiz-opt" onclick="check('q4',this,true,'¡Correcto! En una vela roja (bajista), el precio cerró más bajo de lo que abrió. El mercado perdió valor durante ese período.')">El precio de cierre fue menor que el precio de apertura — el activo bajó ese día</button>
+        <button class="quiz-opt" onclick="check('q4',this,false,'No. Eso indicaría un día con poca variación, pero no necesariamente una vela roja.')">El precio se mantuvo igual que el día anterior</button>
+        <button class="quiz-opt" onclick="check('q4',this,false,'No. El color de la vela solo compara apertura vs cierre dentro del mismo día, no con el día anterior.')">El precio abrió más bajo que el cierre del día anterior</button>
+      </div>
+      <div class="quiz-feedback" id="q4-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q5">
+      <div class="q-text">5 · ¿Para qué sirve el parámetro <code>panel_ratios=(7, 3)</code> en <code>mpf.plot()</code>?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q5',this,false,'No. El número de velas lo determina el DataFrame — panel_ratios no filtra ni limita los datos.')">Define cuántas velas se muestran en cada panel</button>
+        <button class="quiz-opt" onclick="check('q5',this,false,'No. El tamaño total lo define figsize=(22, 6). panel_ratios solo distribuye ese espacio entre los paneles.')">Establece el tamaño total de la figura en pulgadas</button>
+        <button class="quiz-opt" onclick="check('q5',this,true,'¡Correcto! Divide la altura total de la figura entre los paneles. (7, 3) significa que el panel de precios ocupa el 70% de la altura y el de volumen el 30%.')">Controla la proporción de altura entre el panel de precios (70%) y el de volumen (30%)</button>
+        <button class="quiz-opt" onclick="check('q5',this,false,'No. El estilo de colores lo controla el parámetro style="yahoo". panel_ratios solo afecta proporciones.')">Cambia los colores de las velas alcistas y bajistas</button>
+      </div>
+      <div class="quiz-feedback" id="q5-fb"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       06 · RESUMEN
+  ══════════════════════════════════════════════ -->
+  <div id="sec-resumen" class="section">
+    <div class="phase-label">Lo que tienes que dominar de esta lección</div>
+
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>pandas_datareader</strong> es un puente a múltiples fuentes de datos. Se importa como <code style="color:var(--blue)">pdr</code> y la fuente recomendada sin API key es <strong style="color:var(--text)">Stooq</strong>.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Dos formas de pedir datos a Stooq:</strong> <code style="color:var(--green)">pdr.get_data_stooq()</code> (rápida, fechas datetime) y <code style="color:var(--green)">pdr.stooq.StooqDailyReader().read()</code> (más control, acepta strings).</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Stooq devuelve datos en orden inverso.</strong> Usar <code style="color:var(--amber)">df[::-1]</code> para invertirlos a orden cronológico antes de graficar.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Columnas de doble nivel:</strong> Stooq incluye el ticker como segundo nivel. Eliminar con <code style="color:var(--amber)">df.columns.droplevel(level=1)</code> antes de pasar a mplfinance.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Listar fuentes disponibles:</strong> <code style="color:var(--green)">[i for i in dir(pdr) if "get_data" in i]</code> muestra las 10 opciones. Solo Stooq funciona sin API key hoy.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>mplfinance</strong> genera gráficas de velas financieras. Requiere columnas limpias (un solo nivel) con nombres exactos: Open, High, Low, Close, Volume.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Parámetros clave de mpf.plot():</strong> <code>type="candle"</code>, <code>volume=True</code>, <code>panel_ratios=(7,3)</code>, <code>warn_too_much_data=df.shape[0]</code>.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Limitación de la librería:</strong> pandas_datareader es más lenta que yfinance. Úsala cuando encuentres código existente que la use, o cuando necesites una fuente alternativa a Yahoo Finance.</div>
+    </div>
+
+    <div class="gap"></div>
+    <div class="explain-box explain-blue">
+      <span class="label">pregunta para reflexionar</span>
+      Si quisieras descargar datos de tres empresas al mismo tiempo (AMZN, TSLA, MSFT) con <code>get_data_stooq()</code> y luego graficar solo AMZN, ¿en qué momento usarías <code>droplevel()</code> y cómo filtrarías solo los datos de Amazon antes de graficar?
+    </div>
+  </div>
+
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('visible');
+  btn.classList.add('active');
+}
+function check(qid, btn, isCorrect, feedback) {
+  var q = document.getElementById(qid);
+  if (q.dataset.answered) return;
+  q.dataset.answered = '1';
+  q.querySelectorAll('.quiz-opt').forEach(function(o) { o.disabled = true; });
+  btn.classList.add(isCorrect ? 'correct' : 'wrong');
+  var fb = document.getElementById(qid + '-fb');
+  fb.textContent = feedback;
+  fb.className = 'quiz-feedback show ' + (isCorrect ? 'feedback-ok' : 'feedback-no');
+}
+</script>
+</body>
+</html>
