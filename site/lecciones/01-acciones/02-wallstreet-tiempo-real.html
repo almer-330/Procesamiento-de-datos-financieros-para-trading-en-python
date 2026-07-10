@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · Datos en Tiempo Real con wallstreet</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --border: #30363d;
+  --green: #3fb950;
+  --green-dim: #1a4226;
+  --amber: #d29922;
+  --amber-dim: #3d2e0a;
+  --blue: #58a6ff;
+  --blue-dim: #0d2a4f;
+  --red: #f85149;
+  --red-dim: #3d1515;
+  --purple: #bc8cff;
+  --purple-dim: #2a1a4a;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #6e7681;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  font-family: var(--mono);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.topbar-title { font-size: 12px; color: var(--text2); margin-left: 8px; letter-spacing: 0.04em; }
+
+.nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-wrap: wrap;
+}
+.nav-btn {
+  padding: 10px 18px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text2);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+.section { display: none; padding: 20px; }
+.section.visible { display: block; }
+
+.phase-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.code-block {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.8;
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+.code-block .comment { color: var(--text3); }
+.code-block .kw { color: var(--purple); }
+.code-block .fn { color: var(--blue); }
+.code-block .str { color: #79c0ff; }
+.code-block .var { color: var(--green); }
+.code-block .num { color: var(--amber); }
+.code-block .cls { color: #ffa657; }
+.code-block .attr { color: #d2a8ff; }
+
+.explain-box {
+  background: var(--bg3);
+  border-left: 3px solid var(--green);
+  border-radius: 0 6px 6px 0;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text2);
+  margin-bottom: 12px;
+}
+.explain-box .label {
+  color: var(--green);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.explain-amber { border-left-color: var(--amber); }
+.explain-amber .label { color: var(--amber); }
+.explain-blue { border-left-color: var(--blue); }
+.explain-blue .label { color: var(--blue); }
+.explain-purple { border-left-color: var(--purple); }
+.explain-purple .label { color: var(--purple); }
+.explain-red { border-left-color: var(--red); }
+.explain-red .label { color: var(--red); }
+
+.output-box {
+  background: #0a0f14;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--green);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.output-box .prompt { color: var(--text3); }
+
+.pill {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.pill-green  { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
+.pill-amber  { background: var(--amber-dim);  color: var(--amber);  border: 1px solid var(--amber); }
+.pill-blue   { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue); }
+.pill-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple); }
+.pill-red    { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red); }
+
+.h3 { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+.gap { height: 16px; }
+.gap-sm { height: 8px; }
+
+.attr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.attr-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.attr-name { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.attr-val  { font-size: 13px; color: var(--blue); }
+.attr-desc { font-size: 11px; color: var(--text2); margin-top: 3px; line-height: 1.5; }
+
+.formula-box {
+  background: var(--bg2);
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--amber);
+  margin-bottom: 12px;
+  text-align: center;
+}
+.formula-box .formula { font-size: 14px; color: var(--text); margin-top: 4px; }
+
+.thread-diagram {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+.thread-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  flex-wrap: nowrap;
+}
+.thread-label {
+  width: 120px;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.thread-bar {
+  height: 22px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.t-main   { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue); }
+.t-thread { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
+.t-sleep  { background: var(--bg3);        color: var(--text3);  border: 1px solid var(--border); }
+.t-pause  { background: var(--amber-dim);  color: var(--amber);  border: 1px solid var(--amber); }
+
+.quiz-q {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.quiz-q .q-text { font-size: 12px; color: var(--text); margin-bottom: 10px; line-height: 1.6; }
+.quiz-opts { display: flex; flex-direction: column; gap: 6px; }
+.quiz-opt {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--mono);
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s;
+}
+.quiz-opt:hover { border-color: var(--blue); color: var(--text); }
+.quiz-opt.correct { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.quiz-opt.wrong   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+.quiz-feedback {
+  display: none;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.quiz-feedback.show { display: block; }
+.feedback-ok { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+.feedback-no { background: var(--red-dim);   color: var(--red);   border: 1px solid var(--red); }
+
+.summary-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.summary-icon { color: var(--green); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.summary-text { color: var(--text2); }
+.summary-text strong { color: var(--text); }
+</style>
+
+<style id="crumb-style">
+  .kb-crumbbar{position:sticky;top:0;left:0;width:100%;z-index:9999;
+    background:#0a0e14;border-bottom:1px solid #1e2d45;
+    display:flex;align-items:center;gap:10px;
+    padding:10px 20px;font-family:'JetBrains Mono','Space Mono',monospace;
+    font-size:11.5px;letter-spacing:.04em;}
+  .kb-crumbbar a{color:#7fa8c9;text-decoration:none;transition:color .15s;}
+  .kb-crumbbar a:hover{color:#38d9a9;}
+  .kb-crumbbar .sep{color:#3a4a5e;}
+  .kb-crumbbar .cur{color:#eaf2ff;}
+</style>
+</head>
+<body>
+<div class="kb-crumbbar">
+  <a href="../../index.html">🏠 IA Humana KB</a>
+  <span class="sep">/</span>
+  <a href="../../modulos/01-acciones/index.html">01 · Extracción de datos de acciones</a>
+  <span class="sep">/</span>
+  <span class="cur">Lección 02 · wallstreet tiempo real</span>
+</div>
+
+<div class="card">
+  <div class="topbar">
+    <div class="dot dot-r"></div>
+    <div class="dot dot-y"></div>
+    <div class="dot dot-g"></div>
+    <span class="topbar-title">02_datos_tiempo_real_wallstreet.py — Procesamiento de Datos Financieros</span>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('conceptos', this)">01 · Conceptos</button>
+    <button class="nav-btn" onclick="show('codigo', this)">02 · Código</button>
+    <button class="nav-btn" onclick="show('hilos', this)">03 · Hilos</button>
+    <button class="nav-btn" onclick="show('quiz', this)">04 · Quiz</button>
+    <button class="nav-btn" onclick="show('resumen', this)">05 · Resumen</button>
+  </div>
+
+  <!-- CONCEPTOS -->
+  <div id="sec-conceptos" class="section visible">
+    <div class="phase-label">¿Qué vamos a lograr en esta lección?</div>
+
+    <div class="explain-box">
+      <span class="label">contexto</span>
+      Muchos sistemas de trading necesitan saber <em>ahora mismo</em> cuánto vale un activo. No el precio de ayer, no el de hace una hora — el precio <strong style="color:var(--text)">en este momento</strong>. Esta lección te enseña a pedirlo con una sola línea de Python.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Las tres herramientas que usaremos</div>
+
+    <div class="attr-grid">
+      <div class="attr-card">
+        <div class="attr-name">librería principal</div>
+        <div class="attr-val">wallstreet</div>
+        <div class="attr-desc">Obtiene datos de mercado en tiempo real. Su nombre viene de Wall Street, el famoso centro financiero de Nueva York.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">librería de concurrencia</div>
+        <div class="attr-val">threading</div>
+        <div class="attr-desc">Permite ejecutar tareas "en paralelo" — el programa puede hacer otras cosas mientras espera el siguiente precio.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">librería de tiempo</div>
+        <div class="attr-val">time</div>
+        <div class="attr-desc">Pone a "dormir" el programa N segundos entre cada consulta, para no bombardear el servidor con peticiones continuas.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">instalación</div>
+        <div class="attr-val" style="font-size:11px">pip install wallstreet</div>
+        <div class="attr-desc">Ejecuta en tu terminal de Anaconda o en cualquier entorno donde tengas Python activo.</div>
+      </div>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Los atributos clave del objeto <span style="color:var(--blue)">Stock</span></div>
+
+    <div class="attr-grid">
+      <div class="attr-card">
+        <div class="attr-name">stock.price</div>
+        <div class="attr-val">precio actual</div>
+        <div class="attr-desc">Precio de mercado en este momento, en la moneda nativa del activo.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">stock.name</div>
+        <div class="attr-val">nombre del activo</div>
+        <div class="attr-desc">Nombre completo de la empresa (ej. "Apple Inc.").</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">stock.currency</div>
+        <div class="attr-val">moneda</div>
+        <div class="attr-desc">Moneda en la que cotiza: USD, EUR, MXN, etc.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">stock.change</div>
+        <div class="attr-val">cambio en $</div>
+        <div class="attr-desc">Cuánto subió o bajó el precio desde que abrió el mercado hoy.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">stock.cp</div>
+        <div class="attr-val">cambio en %</div>
+        <div class="attr-desc">"Change Percent" — el mismo movimiento expresado como porcentaje.</div>
+      </div>
+      <div class="attr-card">
+        <div class="attr-name">stock.quote</div>
+        <div class="attr-val">ticker / símbolo</div>
+        <div class="attr-desc">El símbolo bursátil que usaste al crear el objeto (ej. "AAPL").</div>
+      </div>
+    </div>
+
+    <div class="explain-box explain-amber">
+      <span class="label">¿qué es un ticker?</span>
+      Es el código abreviado con el que se identifica una empresa en bolsa. Apple → AAPL, Amazon → AMZN, Tesla → TSLA, Microsoft → MSFT. Es como el "usuario" de la empresa en el mercado.
+    </div>
+  </div>
+
+  <!-- CÓDIGO -->
+  <div id="sec-codigo" class="section">
+    <div class="phase-label">Código paso a paso — parte 1: petición simple</div>
+
+    <div class="pill pill-green">paso 1 — importar librerías</div>
+    <div class="code-block">
+      <span class="kw">import</span> <span class="cls">wallstreet</span>  <span class="comment"># datos de mercado en tiempo real</span><br>
+      <span class="kw">import</span> <span class="cls">threading</span>  <span class="comment"># para ejecutar en paralelo</span><br>
+      <span class="kw">import</span> <span class="cls">time</span>       <span class="comment"># para pausar entre peticiones</span>
+    </div>
+    <div class="explain-box">
+      <span class="label">¿por qué estas tres?</span>
+      <code style="color:var(--blue)">wallstreet</code> hace el trabajo pesado (pedir el precio). <code style="color:var(--blue)">threading</code> deja que esa petición corra en segundo plano mientras el resto del programa sigue vivo. <code style="color:var(--blue)">time</code> controla la cadencia — sin <code>sleep()</code>, consultaríamos miles de veces por segundo.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="pill pill-blue">paso 2 — crear el objeto Stock</div>
+    <div class="code-block">
+      <span class="var">ticker</span> = <span class="str">"AAPL"</span>                                  <span class="comment"># símbolo de Apple</span><br>
+      <span class="var">stock</span>  = <span class="cls">wallstreet</span>.<span class="fn">Stock</span>(<span class="attr">quote</span>=<span class="var">ticker</span>)   <span class="comment"># petición al servidor</span>
+    </div>
+    <div class="explain-box explain-blue">
+      <span class="label">¿qué pasa aquí?</span>
+      Al escribir <code style="color:var(--blue)">wallstreet.Stock(quote="AAPL")</code> Python sale a internet en ese momento, consulta el precio actualizado de Apple y guarda toda la información en el objeto <code style="color:var(--blue)">stock</code>. Es una sola línea que reemplaza decenas de líneas de código con requests HTTP.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="pill pill-amber">paso 3 — mostrar precio, cambios y moneda</div>
+    <div class="code-block">
+      <span class="fn">print</span>(<span class="str">f"Precio de </span><span class="var">{stock.name}</span><span class="str">: </span><span class="var">{stock.price}</span><span class="str"> en </span><span class="var">{stock.currency}</span><span class="str">"</span>)<br>
+      <span class="fn">print</span>(<span class="str">f"Cambio %: </span><span class="var">{stock.cp:.2f}</span><span class="str">%"</span>)<br>
+      <span class="fn">print</span>(<span class="str">f"Cambio $: </span><span class="var">{stock.change:.2f}</span><span class="str">"</span>)
+    </div>
+    <div class="explain-box explain-amber">
+      <span class="label">el :.2f</span>
+      Dentro de las llaves <code>{}</code> de un f-string, <code>:.2f</code> significa "muestra este número con 2 decimales". Sin esto, Python podría imprimir <code>0.3700000000001</code> en lugar de <code>0.37</code>.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="pill pill-purple">paso 4 — calcular el precio de cierre de ayer</div>
+    <div class="code-block">
+      <span class="var">precio_anterior</span> = <span class="var">stock</span>.<span class="attr">price</span> - <span class="var">stock</span>.<span class="attr">change</span><br>
+      <span class="fn">print</span>(<span class="str">f"Cierre de ayer: </span><span class="var">{precio_anterior:.2f}</span><span class="str">"</span>)
+    </div>
+
+    <div class="formula-box">
+      <div style="font-size:10px; color:var(--text3); letter-spacing:0.08em; text-transform:uppercase">lógica del cálculo</div>
+      <div class="formula">precio_ayer = precio_hoy − cambio_de_hoy</div>
+      <div style="font-size:11px; color:var(--text2); margin-top:6px">Si AAPL está en $238.50 y subió $1.20 hoy → ayer cerró en $237.30</div>
+    </div>
+
+    <div class="output-box">
+      <span class="prompt"># salida esperada en consola</span><br>
+      Precio de Apple Inc.: 238.50 en USD<br>
+      Cambio %: 0.51%<br>
+      Cambio $: 1.20<br>
+      Cierre de ayer: 237.30
+    </div>
+  </div>
+
+  <!-- HILOS -->
+  <div id="sec-hilos" class="section">
+    <div class="phase-label">Parte 2 — monitoreo automático en paralelo</div>
+
+    <div class="explain-box">
+      <span class="label">¿por qué necesitamos hilos?</span>
+      Si consultamos el precio en un bucle normal (<code>while True</code>), el programa queda bloqueado ahí — no puede hacer nada más mientras espera. Con <code>threading</code>, ese bucle corre en un "carril separado" y el programa principal sigue libre.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">La variable de control</div>
+    <div class="code-block">
+      <span class="var">detenerse</span> = <span class="kw">False</span>   <span class="comment"># interruptor: False = seguir, True = parar</span>
+    </div>
+    <div class="explain-box explain-amber">
+      <span class="label">interruptor on/off</span>
+      Esta variable actúa como un interruptor de luz. Mientras sea <code>False</code>, el hilo sigue corriendo. Cuando la cambiamos a <code>True</code> desde cualquier parte del código, el hilo termina limpiamente en la próxima iteración.
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">La función de monitoreo</div>
+    <div class="code-block">
+      <span class="kw">def</span> <span class="fn">Obtener_Precio</span>(<span class="var">tickers</span>: <span class="cls">list</span>, <span class="var">n_segundos</span>: <span class="cls">float</span>):<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">"""Consulta el precio de cada ticker cada n_segundos."""</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> <span class="kw">True</span>:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> <span class="var">ticker</span> <span class="kw">in</span> <span class="var">tickers</span>:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">t</span> = <span class="cls">wallstreet</span>.<span class="fn">Stock</span>(<span class="attr">quote</span>=<span class="var">ticker</span>)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(<span class="str">f"</span><span class="var">{t.name}</span><span class="str">: </span><span class="var">{t.price}</span><span class="str"> </span><span class="var">{t.currency}</span><span class="str"> | Cambio: </span><span class="var">{t.change:.2f}</span><span class="str">"</span>)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="var">detenerse</span>:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">break</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cls">time</span>.<span class="fn">sleep</span>(<span class="var">n_segundos</span>)
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">Lanzar y controlar el hilo</div>
+    <div class="code-block">
+      <span class="var">tickers</span> = [<span class="str">"AMZN"</span>, <span class="str">"TSLA"</span>, <span class="str">"MSFT"</span>]<br><br>
+      <span class="var">hilo</span> = <span class="cls">threading</span>.<span class="fn">Thread</span>(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="attr">target</span> = <span class="fn">Obtener_Precio</span>,     <span class="comment"># función a ejecutar</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="attr">args</span>   = (<span class="var">tickers</span>, <span class="num">10</span>)       <span class="comment"># argumentos: lista + 10 segundos</span><br>
+      )<br>
+      <span class="var">hilo</span>.<span class="fn">start</span>()              <span class="comment"># dispara el hilo</span><br><br>
+      <span class="comment"># para detenerlo:</span><br>
+      <span class="var">detenerse</span> = <span class="kw">True</span>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="h3">¿Qué sucede en el tiempo?</div>
+    <div class="thread-diagram">
+      <div style="font-size:10px; color:var(--text3); margin-bottom:12px; letter-spacing:0.06em; text-transform:uppercase">línea de tiempo de ejecución</div>
+      <div class="thread-row">
+        <div class="thread-label">programa principal</div>
+        <div class="thread-bar t-main" style="width:120px">define variables</div>
+        <div class="thread-bar t-main" style="width:90px; margin-left:4px">inicia hilo</div>
+        <div class="thread-bar t-pause" style="width:100px; margin-left:4px">detenerse = True</div>
+      </div>
+      <div class="thread-row">
+        <div class="thread-label">hilo de fondo</div>
+        <div class="thread-bar t-thread" style="width:140px; margin-left:4px">consulta AMZN TSLA MSFT</div>
+        <div class="thread-bar t-sleep" style="width:80px; margin-left:4px">sleep(10s)</div>
+        <div class="thread-bar t-thread" style="width:100px; margin-left:4px">consulta otra vez</div>
+        <div class="thread-bar t-pause" style="width:80px; margin-left:4px">if detenerse → break</div>
+      </div>
+      <div style="font-size:10px; color:var(--text3); margin-top:10px">Ambos "carriles" corren al mismo tiempo sin bloquearse mutuamente.</div>
+    </div>
+
+    <div class="explain-box explain-red">
+      <span class="label">error común en la lección</span>
+      El instructor olvidó pasar el segundo argumento (<code>n_segundos</code>) la primera vez que ejecutó. El error que Python da es: <code>TypeError: Obtener_Precio() missing 1 required positional argument</code>. La solución fue agregar el <code>10</code> en el <code>args=(tickers, 10)</code>.
+    </div>
+
+    <div class="explain-box explain-purple">
+      <span class="label">nota sobre el ejemplo del curso</span>
+      En el código ejecutaron <code>detenerse = True</code> inmediatamente después de <code>hilo.start()</code>, por lo que el hilo solo hizo <em>una</em> iteración antes de detenerse. En una aplicación real, esa línea se pondría en un botón o condición separada para dejar que corra continuamente.
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="sec-quiz" class="section">
+    <div class="phase-label">Verifica tu comprensión</div>
+
+    <div class="quiz-q" id="q1">
+      <div class="q-text">1 · ¿Qué hace exactamente la línea <code style="color:var(--blue)">wallstreet.Stock(quote="AAPL")</code>?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q1', this, false, 'Incorrecto. El ticker AAPL ya es de Apple — el objeto Stock no necesita buscar el nombre.')">Busca el nombre completo de la empresa a partir del símbolo "AAPL"</button>
+        <button class="quiz-opt" onclick="check('q1', this, true, '¡Correcto! En ese momento Python hace una petición a internet, obtiene el precio actual de AAPL y guarda toda la información disponible en el objeto stock.')">Realiza una petición en tiempo real y devuelve un objeto con el precio y datos actuales del activo</button>
+        <button class="quiz-opt" onclick="check('q1', this, false, 'No. El precio no se actualiza solo — solo cambia si vuelves a crear el objeto o llamas un método de actualización.')">Crea un objeto que actualiza su precio automáticamente cada segundo</button>
+        <button class="quiz-opt" onclick="check('q1', this, false, 'No. wallstreet hace peticiones a datos de mercado, no a bases de datos históricas.')">Descarga el historial de precios de los últimos 30 días</button>
+      </div>
+      <div class="quiz-feedback" id="q1-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q2">
+      <div class="q-text">2 · ¿Cuál es la fórmula para calcular el precio de cierre de ayer?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q2', this, false, 'Al revés. Si el activo subió hoy, su precio actual es mayor que el de ayer. Sumar el cambio daría un precio más alto aún.')">precio_ayer = stock.price + stock.change</button>
+        <button class="quiz-opt" onclick="check('q2', this, true, '¡Correcto! El precio actual ya incluye el movimiento de hoy. Para deshacer ese movimiento y ver el punto de partida (cierre de ayer), restamos el cambio.')">precio_ayer = stock.price − stock.change</button>
+        <button class="quiz-opt" onclick="check('q2', this, false, 'stock.cp es el cambio porcentual, no en unidades monetarias. Restar porcentajes directamente no funciona aquí.')">precio_ayer = stock.price − stock.cp</button>
+        <button class="quiz-opt" onclick="check('q2', this, false, 'Eso daría un ratio sin sentido financiero, no el precio de ayer.')">precio_ayer = stock.price / stock.change</button>
+      </div>
+      <div class="quiz-feedback" id="q2-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q3">
+      <div class="q-text">3 · ¿Por qué usamos <code style="color:var(--blue)">threading.Thread</code> en lugar de un <code style="color:var(--blue)">while True</code> directo?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q3', this, false, 'No. threading no hace las peticiones más rápidas — su propósito es no bloquear el programa principal.')">Porque hace las peticiones HTTP más rápidas</button>
+        <button class="quiz-opt" onclick="check('q3', this, false, 'No tiene nada que ver con la red o el firewall. threading es una herramienta de concurrencia de Python.')">Para evitar bloqueos de firewall al hacer peticiones repetidas</button>
+        <button class="quiz-opt" onclick="check('q3', this, true, '¡Correcto! Un while True bloqueado en la función congelaría el programa. El hilo corre en paralelo, liberando el programa principal para hacer otras cosas o ser detenido con detenerse = True.')">Para que el bucle de consultas corra en paralelo sin congelar el programa principal</button>
+        <button class="quiz-opt" onclick="check('q3', this, false, 'No. time.sleep() es lo que controla el intervalo. threading permite que esa espera no bloquee todo el programa.')">Para que time.sleep() funcione correctamente</button>
+      </div>
+      <div class="quiz-feedback" id="q3-fb"></div>
+    </div>
+
+    <div class="quiz-q" id="q4">
+      <div class="q-text">4 · ¿Qué hace la variable <code style="color:var(--purple)">detenerse</code> cuando se cambia a <code style="color:var(--amber)">True</code>?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="check('q4', this, false, 'No destruye ni elimina el objeto hilo — solo indica que el bucle interno debe terminar al final de la iteración actual.')">Destruye el objeto Thread inmediatamente</button>
+        <button class="quiz-opt" onclick="check('q4', this, false, 'No. Dentro de la función hay un if detenerse: break — el hilo se detiene en la siguiente revisión, no instantáneamente mientras duerme.')">Interrumpe el time.sleep() al instante</button>
+        <button class="quiz-opt" onclick="check('q4', this, true, '¡Correcto! En la próxima iteración, después de que termina el sleep(), la función revisa: if detenerse: break. Si es True, sale del while limpiamente.')">Señala al bucle que debe salir en la próxima iteración</button>
+        <button class="quiz-opt" onclick="check('q4', this, false, 'No. La variable detenerse es global — afecta directamente al hilo porque ambos comparten el mismo espacio de memoria.')">No tiene efecto porque el hilo tiene su propia copia de la variable</button>
+      </div>
+      <div class="quiz-feedback" id="q4-fb"></div>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="sec-resumen" class="section">
+    <div class="phase-label">Lo que tienes que dominar de esta lección</div>
+
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>wallstreet.Stock(quote="TICKER")</strong> — una sola línea que conecta con el mercado y devuelve un objeto con precio, cambio, moneda y nombre del activo.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Atributos del objeto Stock:</strong> <code style="color:var(--blue)">.price</code> (precio actual), <code style="color:var(--blue)">.change</code> (cambio en $), <code style="color:var(--blue)">.cp</code> (cambio en %), <code style="color:var(--blue)">.currency</code>, <code style="color:var(--blue)">.name</code>.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>F-strings con formato:</strong> <code style="color:var(--amber)">{variable:.2f}</code> redondea a 2 decimales dentro del print. Es la forma estándar de formatear precios.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Cálculo del precio anterior:</strong> <code style="color:var(--green)">precio_ayer = stock.price − stock.change</code>. El precio actual ya incluye el movimiento de hoy.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>threading.Thread(target=función, args=(...))</strong> — lanza una función en un hilo separado para que corra en paralelo. Se activa con <code style="color:var(--blue)">.start()</code>.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>Variable de control:</strong> un booleano global (<code style="color:var(--purple)">detenerse</code>) actúa como interruptor para terminar el hilo limpiamente desde fuera de la función.</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-icon">▸</div>
+      <div class="summary-text"><strong>time.sleep(n)</strong> — pausa la ejecución N segundos. Sin esto, el bucle haría miles de peticiones por segundo innecesariamente.</div>
+    </div>
+
+    <div class="gap"></div>
+    <div class="explain-box explain-blue">
+      <span class="label">pregunta para reflexionar</span>
+      ¿Qué pasaría si cambiases la variable <code style="color:var(--blue)">detenerse</code> a <code>True</code> desde dentro de la misma función <code>Obtener_Precio</code>? ¿En qué escenario tendría sentido hacer eso?
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('visible');
+  btn.classList.add('active');
+}
+
+function check(qid, btn, isCorrect, feedback) {
+  var q = document.getElementById(qid);
+  if (q.dataset.answered) return;
+  q.dataset.answered = '1';
+  var opts = q.querySelectorAll('.quiz-opt');
+  opts.forEach(function(o) { o.disabled = true; });
+  btn.classList.add(isCorrect ? 'correct' : 'wrong');
+  var fb = document.getElementById(qid + '-fb');
+  fb.textContent = feedback;
+  fb.className = 'quiz-feedback show ' + (isCorrect ? 'feedback-ok' : 'feedback-no');
+}
+</script>
+</body>
+</html>
