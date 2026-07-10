@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acciones · Trading con Python</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b12;
+    --surface: #0d1421;
+    --surface2: #111928;
+    --border: #1e2d45;
+    --green: #00e87a;
+    --green-dim: #00b85f;
+    --green-glow: rgba(0,232,122,0.12);
+    --amber: #f5a623;
+    --blue: #3d9be9;
+    --red: #ff4d6d;
+    --text: #c8d8e8;
+    --text-muted: #5a7a9a;
+    --text-bright: #eaf2ff;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 240px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+    transition: color 0.2s;
+  }
+  .sidebar-logo .back:hover { color: var(--green); }
+
+  .sidebar-logo .tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .sidebar-logo h1 {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.4;
+  }
+
+  .nav-section { padding: 20px 0 8px; }
+
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    padding: 0 24px;
+    margin-bottom: 8px;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 24px;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-link:hover, .nav-link.active {
+    color: var(--green);
+    border-left-color: var(--green);
+    background: var(--green-glow);
+  }
+
+  .nav-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .nav-link:hover .nav-dot,
+  .nav-link.active .nav-dot { background: var(--green); }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 72px 64px 56px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #0d1421 0%, #070b12 60%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(0,232,122,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--green-glow);
+    border: 1px solid rgba(0,232,122,0.25);
+    border-radius: 2px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 0.15em;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero-sep { color: var(--border); font-family: var(--mono); font-size: 12px; }
+
+  .hero-doc {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+  }
+
+  .hero h1 {
+    font-family: var(--mono);
+    font-size: clamp(24px, 3.5vw, 38px);
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.15;
+    margin-bottom: 18px;
+  }
+
+  .hero h1 span { color: var(--green); }
+
+  .hero p {
+    max-width: 520px;
+    font-size: 14.5px;
+    color: var(--text);
+    line-height: 1.75;
+    margin-bottom: 28px;
+  }
+
+  /* Fases índice en hero */
+  .phases-index {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .phase-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 7px 14px;
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .phase-pill:hover {
+    border-color: rgba(0,232,122,0.3);
+    background: var(--green-glow);
+  }
+
+  .phase-pill .pill-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+  }
+
+  .phase-pill .pill-label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── PHASE BLOCK ── */
+  .phase-block {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phase-header {
+    padding: 40px 64px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .phase-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    background: var(--green-glow);
+    border: 1px solid rgba(0,232,122,0.2);
+    padding: 4px 10px;
+    border-radius: 2px;
+    white-space: nowrap;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .phase-header-text h2 {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .phase-header-text p {
+    font-size: 13px;
+    color: var(--text-muted);
+    max-width: 520px;
+  }
+
+  /* ── CONTENT INSIDE PHASE ── */
+  .phase-content {
+    padding: 40px 64px;
+  }
+
+  /* ── SUBTEMA ── */
+  .subtema {
+    margin-bottom: 40px;
+  }
+
+  .subtema:last-child { margin-bottom: 0; }
+
+  .subtema-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--green-dim);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .subtema h3 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 14px;
+  }
+
+  .subtema p {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.75;
+    max-width: 680px;
+  }
+
+  .subtema p + p { margin-top: 12px; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-left: 3px solid var(--green);
+    background: var(--green-glow);
+    padding: 14px 20px;
+    margin: 18px 0;
+    border-radius: 0 3px 3px 0;
+    font-size: 13.5px;
+    color: var(--text-bright);
+    max-width: 680px;
+  }
+
+  .callout.amber {
+    border-left-color: var(--amber);
+    background: rgba(245,166,35,0.07);
+  }
+
+  /* ── TIPO CARD (tipos de acciones) ── */
+  .tipos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .tipo-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 20px 22px;
+    transition: border-color 0.2s;
+  }
+
+  .tipo-card:hover {
+    border-color: rgba(0,232,122,0.25);
+  }
+
+  .tipo-card .tipo-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .tipo-card h4 {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+
+  .tipo-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+
+  .tipo-card .ejemplo {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--green-dim);
+    font-family: var(--mono);
+  }
+
+  /* ── MERCADO CARDS ── */
+  .mercado-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+    max-width: 720px;
+  }
+
+  .mercado-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mercado-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+  }
+
+  .mercado-card.primario::before { background: var(--blue); }
+  .mercado-card.secundario::before { background: var(--green); }
+
+  .mercado-card .m-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+  }
+
+  .mercado-card.primario .m-tag { color: var(--blue); }
+  .mercado-card.secundario .m-tag { color: var(--green); }
+
+  .mercado-card h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: 10px;
+  }
+
+  .mercado-card p {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+
+  /* ── BENEFICIOS ── */
+  .beneficios-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .beneficio {
+    display: flex;
+    gap: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    border-radius: 3px;
+    align-items: flex-start;
+  }
+
+  .beneficio .b-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    opacity: 0.5;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .beneficio .b-body h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: 5px;
+  }
+
+  .beneficio .b-body p {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── CONCEPTOS CLAVE ── */
+  .glosario {
+    padding: 48px 64px;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+  }
+
+  .glosario-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .glosario-header h2 {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .glosario-header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .glosario-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--amber);
+    background: rgba(245,166,35,0.08);
+    border: 1px solid rgba(245,166,35,0.2);
+    padding: 4px 10px;
+    border-radius: 2px;
+    white-space: nowrap;
+    letter-spacing: 0.15em;
+    flex-shrink: 0;
+  }
+
+  .glosario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+
+  .glosario-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 18px;
+    display: flex;
+    gap: 14px;
+  }
+
+  .glosario-item .g-term {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    min-width: 110px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  .glosario-item .g-def {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── DIVIDER ── */
+  .subtema-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 36px 0;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero, .phase-header, .phase-content, .glosario { padding-left: 24px; padding-right: 24px; }
+    .mercado-grid { grid-template-columns: 1fr; }
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+
+<style id="crumb-style">
+  .kb-crumbbar{position:sticky;top:0;left:0;width:100%;z-index:9999;
+    background:#0a0e14;border-bottom:1px solid #1e2d45;
+    display:flex;align-items:center;gap:10px;
+    padding:10px 20px;font-family:'JetBrains Mono','Space Mono',monospace;
+    font-size:11.5px;letter-spacing:.04em;}
+  .kb-crumbbar a{color:#7fa8c9;text-decoration:none;transition:color .15s;}
+  .kb-crumbbar a:hover{color:#38d9a9;}
+  .kb-crumbbar .sep{color:#3a4a5e;}
+  .kb-crumbbar .cur{color:#eaf2ff;}
+  .kb-crumbbar{position:relative;}
+  body .sidebar{top:38px;height:calc(100vh - 38px);}
+</style>
+</head>
+<body>
+<div class="kb-crumbbar">
+  <a href="../../index.html">🏠 IA Humana KB</a>
+  <span class="sep">/</span>
+  <a href="../../modulos/01-acciones/index.html">01 · Extracción de datos de acciones</a>
+  <span class="sep">/</span>
+  <span class="cur">Conceptos fundamentales</span>
+</div>
+
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <a href="trading-parte1.html" class="back">← Volver al inicio</a>
+    <div class="tag">Acciones</div>
+    <h1>Fundamentos e instrumentos</h1>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Introducción</div>
+    <a href="#intro" class="nav-link"><span class="nav-dot"></span>¿De qué trata esto?</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Fase 1</div>
+    <a href="#fase1" class="nav-link"><span class="nav-dot"></span>¿Qué es una acción?</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Fase 2</div>
+    <a href="#fase2" class="nav-link"><span class="nav-dot"></span>Tipos de acciones</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Fase 3</div>
+    <a href="#fase3" class="nav-link"><span class="nav-dot"></span>Emisión y mercados</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Fase 4</div>
+    <a href="#fase4" class="nav-link"><span class="nav-dot"></span>Beneficios de invertir</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Referencia</div>
+    <a href="#glosario" class="nav-link"><span class="nav-dot"></span>Conceptos clave</a>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <!-- ── HERO / INTRO ── -->
+  <div class="hero" id="intro">
+    <div class="hero-meta">
+      <div class="hero-badge">Trading con Python</div>
+      <span class="hero-sep">/</span>
+      <span class="hero-doc">Documento 02 — Acciones</span>
+    </div>
+    <h1>Introducción a<br>las <span>acciones</span></h1>
+    <p>
+      Antes de escribir una sola línea de código para obtener datos de acciones, necesitas entender qué estás mirando. Este documento cubre los fundamentos: qué es una acción, qué tipos existen, cómo llegan al mercado y por qué son el activo más trabajado en este curso.
+    </p>
+    <div class="phases-index">
+      <a href="#fase1" class="phase-pill">
+        <span class="pill-num">01</span>
+        <span class="pill-label">¿Qué es una acción?</span>
+      </a>
+      <a href="#fase2" class="phase-pill">
+        <span class="pill-num">02</span>
+        <span class="pill-label">Tipos de acciones</span>
+      </a>
+      <a href="#fase3" class="phase-pill">
+        <span class="pill-num">03</span>
+        <span class="pill-label">Emisión y mercados</span>
+      </a>
+      <a href="#fase4" class="phase-pill">
+        <span class="pill-num">04</span>
+        <span class="pill-label">Beneficios de invertir</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       FASE 1 — QUÉ ES UNA ACCIÓN
+  ══════════════════════════════════ -->
+  <div class="phase-block" id="fase1">
+    <div class="phase-header">
+      <span class="phase-num">FASE 01</span>
+      <div class="phase-header-text">
+        <h2>¿Qué es una acción?</h2>
+        <p>La unidad básica de propiedad en una empresa. Entender esto es el punto de partida de todo lo demás.</p>
+      </div>
+    </div>
+
+    <div class="phase-content">
+
+      <div class="subtema">
+        <div class="subtema-label">Definición</div>
+        <h3>Una fracción de propiedad en una empresa</h3>
+        <p>
+          Una acción es un instrumento financiero que representa una fracción de propiedad en una empresa. Cuando compras una acción, te conviertes en dueño parcial de esa compañía.
+        </p>
+        <p>
+          Para que puedas comprar acciones de una empresa, esa empresa primero debe haberlas emitido y estar registrada en una bolsa de valores. La bolsa cumple una función clave: aporta transparencia y regulación, lo que da seguridad a los compradores.
+        </p>
+      </div>
+
+      <hr class="subtema-divider">
+
+      <div class="subtema">
+        <div class="subtema-label">Precio</div>
+        <h3>El valor de una acción no es fijo — fluctúa</h3>
+        <p>
+          El valor de una acción fluctúa según el rendimiento de la empresa, condiciones económicas globales, cambios en la industria y especulación del mercado.
+        </p>
+      </div>
+
+      <hr class="subtema-divider">
+
+      <div class="subtema">
+        <div class="subtema-label">Contexto</div>
+        <h3>¿Por qué son tan relevantes?</h3>
+        <p>
+          En Estados Unidos, alrededor del 58% de la población invierte en acciones, ya sea comprándolas directamente o a través de fondos de inversión y planes de retiro.
+        </p>
+        <p>
+          Para los inversionistas o traders, las acciones ofrecen una oportunidad para generar riqueza a largo plazo mediante el aumento de su valor, la distribución de dividendos, o ambas.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       FASE 2 — TIPOS DE ACCIONES
+  ══════════════════════════════════ -->
+  <div class="phase-block" id="fase2">
+    <div class="phase-header">
+      <span class="phase-num">FASE 02</span>
+      <div class="phase-header-text">
+        <h2>Tipos de acciones</h2>
+        <p>Entender los tipos te ayuda a saber qué estás comprando y qué derechos tienes. Cada tipo existe por una razón concreta.</p>
+      </div>
+    </div>
+
+    <div class="phase-content">
+      <div class="tipos-grid">
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Las más comunes</div>
+          <h4>Acciones ordinarias</h4>
+          <p>Las más comunes y las que normalmente se compran en bolsa. Dan derecho a votar en juntas de accionistas y a recibir dividendos si la empresa decide distribuirlos. Son el punto de entrada estándar para un inversor.</p>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Prioridad de cobro</div>
+          <h4>Acciones preferentes</h4>
+          <p>Tienen prioridad sobre las ordinarias tanto para recibir dividendos como para recuperar activos si la empresa quiebra. Suelen pagar dividendos fijos, lo que las hace atractivas para quienes buscan ingresos estables y predecibles.</p>
+          <div class="ejemplo">→ Las usan mucho fondos de pensiones e inversores institucionales</div>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Control diferenciado</div>
+          <h4>Acciones por clase (A, B, C…)</h4>
+          <p>Una empresa puede emitir distintas categorías con derechos diferentes. El caso típico: las Clase A dan más votos que las Clase B.</p>
+          <div class="ejemplo">→ Google (Alphabet) hace esto para que sus fundadores mantengan el control estratégico mientras el público invierte con menos influencia en las decisiones</div>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Sin participación</div>
+          <h4>Acciones sin voto</h4>
+          <p>No permiten participar en decisiones de la empresa, pero sí dan acceso a dividendos y ganancias de capital. Las emiten empresas que necesitan capital pero no quieren que nuevos inversores interfieran en el control.</p>
+          <div class="ejemplo">→ Ejemplo típico: startups tecnológicas en crecimiento</div>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Incentivo laboral</div>
+          <h4>Acciones restrictivas</h4>
+          <p>Se emiten principalmente para empleados como incentivo. Vienen con condiciones: el empleado no puede venderlas hasta cumplir cierto tiempo en la empresa o alcanzar metas específicas. El objetivo es fomentar lealtad y desempeño a largo plazo.</p>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">En circulación</div>
+          <h4>Acciones flotantes</h4>
+          <p>Son las que están disponibles libremente en el mercado para que cualquiera las compre o venda. Su cantidad varía si la empresa emite nuevas acciones (aumenta el flotante) o las recompra (lo reduce). Cuando una empresa hace su salida a bolsa, incrementa sus acciones flotantes para recaudar capital.</p>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Recompradas por la empresa</div>
+          <h4>Acciones en autocartera</h4>
+          <p>Son acciones que la propia empresa recompró del mercado. Estas no votan ni pagan dividendos. Las empresas las recompran para estabilizar el precio o para beneficiar a los accionistas existentes al reducir la cantidad de acciones en circulación.</p>
+          <div class="ejemplo">→ Apple es el ejemplo más conocido de programas masivos de recompra</div>
+        </div>
+
+        <div class="tipo-card">
+          <div class="tipo-tag">Categoría de calidad</div>
+          <h4>Acciones blue chip</h4>
+          <p>No es un tipo formal, sino una categoría de calidad. Son acciones de empresas grandes, sólidas y con historial estable. Atractivas para quien busca seguridad y rendimiento consistente.</p>
+          <div class="ejemplo">→ Coca-Cola: conocida por sus dividendos regulares y su estabilidad a lo largo del tiempo</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       FASE 3 — EMISIÓN Y MERCADOS
+  ══════════════════════════════════ -->
+  <div class="phase-block" id="fase3">
+    <div class="phase-header">
+      <span class="phase-num">FASE 03</span>
+      <div class="phase-header-text">
+        <h2>Cómo funciona la emisión y el mercado de acciones</h2>
+        <p>El camino que sigue una acción desde que existe hasta que la puedes comprar tú.</p>
+      </div>
+    </div>
+
+    <div class="phase-content">
+
+      <div class="subtema">
+        <div class="subtema-label">Primera emisión</div>
+        <h3>Oferta Pública Inicial — IPO</h3>
+        <p>
+          El proceso se llama Oferta Pública Inicial (OPI o IPO por sus siglas en inglés). La empresa trabaja con bancos de inversión para determinar su valor y fijar un precio inicial por acción. Luego esas acciones se ofrecen al público y el dinero recaudado va directo a la empresa — para financiar crecimiento, pagar deudas o lanzar nuevos proyectos.
+        </p>
+        <div class="callout amber">
+          Amazon hizo esto en 1997: desde ese momento cualquier inversor pudo comprar y vender sus acciones en el mercado.
+        </div>
+      </div>
+
+      <hr class="subtema-divider">
+
+      <div class="subtema">
+        <div class="subtema-label">Dónde ocurre cada cosa</div>
+        <h3>Mercado primario vs. mercado secundario</h3>
+
+        <div class="mercado-grid">
+          <div class="mercado-card primario">
+            <div class="m-tag">MERCADO PRIMARIO</div>
+            <h4>Primera emisión — el dinero va a la empresa</h4>
+            <p>Es donde ocurre la IPO. Quienes compran aquí suelen ser inversores institucionales con mucho capital — fondos de inversión, fondos de pensiones, aseguradoras. Tienen acceso exclusivo antes de que las acciones estén disponibles para el público general.</p>
+          </div>
+          <div class="mercado-card secundario">
+            <div class="m-tag">MERCADO SECUNDARIO</div>
+            <h4>Negociación entre inversores — liquidez</h4>
+            <p>Una vez emitidas, las acciones se negocian aquí entre inversores. La empresa ya no recibe dinero — las transacciones ocurren entre compradores y vendedores. La Bolsa de Nueva York y el Nasdaq son ejemplos. Este mercado es fundamental porque aporta liquidez: permite entrar y salir de una inversión con facilidad.</p>
+          </div>
+        </div>
+      </div>
+
+      <hr class="subtema-divider">
+
+      <div class="subtema">
+        <div class="subtema-label">La relación entre ambos</div>
+        <h3>Los dos son necesarios para que el sistema funcione</h3>
+        <p>
+          El mercado primario financia a las empresas. El mercado secundario da liquidez a los inversores y permite que el capital fluya. Los dos son necesarios para que el sistema funcione.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       FASE 4 — BENEFICIOS
+  ══════════════════════════════════ -->
+  <div class="phase-block" id="fase4">
+    <div class="phase-header">
+      <span class="phase-num">FASE 04</span>
+      <div class="phase-header-text">
+        <h2>Beneficios de invertir en acciones</h2>
+        <p>Las razones concretas por las que las acciones son el vehículo de inversión más popular del mundo.</p>
+      </div>
+    </div>
+
+    <div class="phase-content">
+      <div class="beneficios-list">
+
+        <div class="beneficio">
+          <span class="b-num">01</span>
+          <div class="b-body">
+            <h4>Rentabilidad potencial</h4>
+            <p>Si la empresa crece, el valor de tu acción sube y puedes obtener ganancias significativas.</p>
+          </div>
+        </div>
+
+        <div class="beneficio">
+          <span class="b-num">02</span>
+          <div class="b-body">
+            <h4>Ingresos pasivos</h4>
+            <p>Muchas empresas reparten dividendos periódicamente. Recibes dinero sin necesidad de vender tus acciones.</p>
+          </div>
+        </div>
+
+        <div class="beneficio">
+          <span class="b-num">03</span>
+          <div class="b-body">
+            <h4>Liquidez</h4>
+            <p>Puedes comprar y vender con rapidez en cualquier momento del horario de mercado.</p>
+          </div>
+        </div>
+
+        <div class="beneficio">
+          <span class="b-num">04</span>
+          <div class="b-body">
+            <h4>Diversificación</h4>
+            <p>Al invertir en diferentes empresas y sectores, reduces el riesgo global de tu portafolio, protegiéndote de las fluctuaciones que pueden afectar a una sola empresa o un solo sector.</p>
+          </div>
+        </div>
+
+        <div class="beneficio">
+          <span class="b-num">05</span>
+          <div class="b-body">
+            <h4>Propiedad</h4>
+            <p>Al invertir en acciones adquieres propiedad parcial de las empresas, lo que te permite participar en su crecimiento.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       CONCEPTOS CLAVE — GLOSARIO
+  ══════════════════════════════════ -->
+  <div class="glosario" id="glosario">
+    <div class="glosario-header">
+      <div>
+        <h2>Conceptos clave</h2>
+        <p>Consulta rápida sin necesidad de releer todo el documento</p>
+      </div>
+      <span class="glosario-badge">REFERENCIA RÁPIDA</span>
+    </div>
+
+    <div class="glosario-grid">
+
+      <div class="glosario-item">
+        <span class="g-term">Acción</span>
+        <span class="g-def">Fracción de propiedad en una empresa, negociada en bolsa.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Bolsa de valores</span>
+        <span class="g-def">Mercado regulado donde se compran y venden acciones. Aporta transparencia y seguridad.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Ordinarias</span>
+        <span class="g-def">Acciones estándar con derecho a voto y dividendos. Las más comunes en bolsa.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Preferentes</span>
+        <span class="g-def">Prioridad sobre ordinarias para cobrar dividendos y activos. Dividendos fijos.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Por clase (A, B, C)</span>
+        <span class="g-def">Distintas categorías con diferentes derechos de voto o dividendos.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Sin voto</span>
+        <span class="g-def">Dan acceso a ganancias pero no permiten votar en decisiones corporativas.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Restrictivas</span>
+        <span class="g-def">Para empleados, con condiciones de tiempo o metas antes de poder venderlas.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Flotantes</span>
+        <span class="g-def">Acciones disponibles libremente en el mercado para compra y venta.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Autocartera</span>
+        <span class="g-def">Acciones que la propia empresa recompró. No votan ni pagan dividendos.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Blue chip</span>
+        <span class="g-def">Categoría de calidad: empresas grandes, sólidas y con historial estable.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">IPO</span>
+        <span class="g-def">Initial Public Offering. Primera vez que una empresa vende sus acciones al público.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Mercado primario</span>
+        <span class="g-def">Donde ocurre la IPO. El dinero va a la empresa. Acceso principalmente institucional.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Mercado secundario</span>
+        <span class="g-def">Donde se negocian acciones ya emitidas entre inversores. NYSE, Nasdaq. Aporta liquidez.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Dividendo</span>
+        <span class="g-def">Pago periódico que una empresa distribuye a sus accionistas de sus ganancias.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Liquidez</span>
+        <span class="g-def">Facilidad con la que puedes convertir una inversión en efectivo rápidamente.</span>
+      </div>
+
+      <div class="glosario-item">
+        <span class="g-term">Diversificación</span>
+        <span class="g-def">Distribuir inversiones en distintos activos para reducir el riesgo global.</span>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
